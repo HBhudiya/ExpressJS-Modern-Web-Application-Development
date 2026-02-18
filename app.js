@@ -1,5 +1,6 @@
 // Imports
 import express from "express";
+import database from "./database.js";
 
 // Configure express app
 const app = new express();
@@ -7,24 +8,32 @@ const app = new express();
 // Configure middleware
 
 // Controllers
-const helloController = (req, res) => res.send("Hi! My Name Is John Doe");
-const addController = (req, res) => {
-  const var1 = req.params.var1;
-  const var2 = req.params.var2;
-  const result = {
-    operation: "addition",
-    operand1: var1,
-    operand2: var2,
-    result: parseInt(var1) + parseInt(var2),
-    message: "Have A Great Day!",
-  };
-  res.json(result);
+const modulesController = async (req, res) => {
+  const table = "Modules";
+  const fields = [
+    "ModuleID",
+    "ModuleCode",
+    "ModuleName",
+    "ModuleLevel",
+    "ModuleYearID",
+    "ModuleLeaderID",
+    "ModuleImageURL",
+  ];
+  const sql = `SELECT ${fields} FROM ${table}`;
+  try {
+    const [result] = await database.query(sql);
+    if (result.length === 0)
+      res.status(404).json({ message: "No Record(s) Found" });
+    else res.status(200).json(result);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: `Failed To Execute Query: ${error.message}` });
+  }
 };
 
 // Endpoints
-app.get("/hello", helloController);
-
-app.get("/add/:var1,:var2", addController);
+app.get("/api/modules", modulesController);
 
 // Start server
 const PORT = process.env.PORT || 5000;
