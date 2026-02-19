@@ -8,7 +8,7 @@ const app = new express();
 // Configure middleware
 
 // Controllers
-const modulesController = async (req, res) => {
+const modulesController = async (req, res, variant) => {
   // Initialisations
   let table = "Modules";
   let fields = [
@@ -31,7 +31,22 @@ const modulesController = async (req, res) => {
   ];
 
   // Build and execute query
-  const sql = `SELECT ${fields} FROM ${table}`;
+  let where = "";
+  const id = parseInt(req.params.id);
+  switch (variant) {
+    case "primary":
+      where = `WHERE ModuleID=${id}`;
+      break;
+    case "leader":
+      where = `WHERE ModuleLeaderID=${id}`;
+      break;
+    case "users":
+      table = `(${table} INNER JOIN Modulemembers ON ModuleID=ModulememberModuleID)`;
+      where = `WHERE ModulememberUserID=${id}`;
+      break;
+  }
+
+  const sql = `SELECT ${fields} FROM ${table} ${where}`;
   try {
     const [result] = await database.query(sql);
     if (result.length === 0)
@@ -46,6 +61,15 @@ const modulesController = async (req, res) => {
 
 // Endpoints
 app.get("/api/modules", modulesController);
+app.get("/api/modules/:id", (req, res) =>
+  modulesController(req, res, "primary"),
+);
+app.get("/api/modules/leader/:id", (req, res) =>
+  modulesController(req, res, "leader"),
+);
+app.get("/api/modules/users/:id", (req, res) =>
+  modulesController(req, res, "users"),
+);
 
 // Start server
 const PORT = process.env.PORT || 5000;
